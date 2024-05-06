@@ -5,7 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 class Camera {
-    glm::vec3 center = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
 
     float yaw = -90.0f;
     float pitch = 0.0f;
@@ -13,17 +13,15 @@ class Camera {
     float radius = 5.0f;
 
     float fovy = 45;
-    float aspect = 800.0f / 600.0f;
-    float near = 0.01f;
+    float aspect = 1920.0f / 1080.0f;
+    float near = 0.1f;
     float far = 150.0f;
 
-    float sensitivity = 0.05;
-    float movementSpeed = 10;
+    float sensitivity = 0.2;
 
 public:
     void setAspect(float aspect) { this->aspect = aspect; }
 
-    void setMovementSpeed(float speed) { movementSpeed = speed; }
     glm::vec3 getFront() const {
         return glm::vec3(cos(glm::radians(yaw)) * cos(glm::radians(pitch)),
                          sin(glm::radians(pitch)),
@@ -35,6 +33,7 @@ public:
     glm::mat4 getProjectionMatrix() const {
         return glm::perspective(glm::radians(fovy), aspect, near, far);
     }
+    void offsetRadius(double offset) { radius += offset * sensitivity; }
     void update();
 };
 

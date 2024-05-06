@@ -7,14 +7,13 @@
 
 class Mouse {
     double mouseDownX, mouseDownY;
-    std::map<int, bool> buttonPressed;
-    std::map<int, glm::vec2> buttonDelta;
+    std::map<int, bool> pressed;
+    glm::vec2 deltaMiddle;
 
 public:
     void update(GLFWwindow *window);
-
-    bool getButtonPressed(int GLFW_MOUSE_BUTTON) { return buttonPressed[GLFW_MOUSE_BUTTON]; }
-    glm::vec2 getButtonDelta(int GLFW_MOUSE_BUTTON) { return buttonDelta[GLFW_MOUSE_BUTTON]; }
+    bool getPressed(int GLFW_MOUSE_BUTTON) { return pressed[GLFW_MOUSE_BUTTON]; }
+    glm::vec2 getMiddleDelta() { return deltaMiddle; }
 };
 
 extern Mouse mouse;

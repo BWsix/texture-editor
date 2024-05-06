@@ -1,8 +1,6 @@
 #include "camera.h"
 #include "mouse.h"
-#include "utils.h"
 #include "imgui.h"
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -13,9 +11,9 @@ void Camera::update() {
         return;
     }
 
-    if (mouse.getButtonPressed(GLFW_MOUSE_BUTTON_MIDDLE)) {
-        yaw += sensitivity * mouse.getButtonDelta(GLFW_MOUSE_BUTTON_MIDDLE).x;
-        pitch -= sensitivity * mouse.getButtonDelta(GLFW_MOUSE_BUTTON_MIDDLE).y;
+    if (mouse.getPressed(GLFW_MOUSE_BUTTON_MIDDLE)) {
+        yaw += sensitivity * mouse.getMiddleDelta().x;
+        pitch -= sensitivity * mouse.getMiddleDelta().y;
         if (pitch > 89.0f) {
             pitch = 89.0f;
         }
@@ -24,12 +22,6 @@ void Camera::update() {
         }
     }
 
-    if (ImGui::IsKeyDown(ImGuiKey_W)) {
-        radius -= movementSpeed * getDeltaTime();
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_S)) {
-        radius += movementSpeed * getDeltaTime();
-    }
     if (radius < 0.1) {
         radius = 0.1;
     }
