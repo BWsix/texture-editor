@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GLFW/glfw3.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -10,7 +11,7 @@ class Camera {
     float yaw = -90.0f;
     float pitch = 0.0f;
 
-    float radius = 5.0f;
+    float radius = 1.0f;
 
     float fovy = 45;
     float aspect = 1920.0f / 1080.0f;
@@ -34,7 +35,7 @@ public:
         return glm::perspective(glm::radians(fovy), aspect, near, far);
     }
     void offsetRadius(double offset) { radius += offset * sensitivity; }
-    void update();
+    void update(GLFWwindow* window);
 };
 
 extern Camera camera;

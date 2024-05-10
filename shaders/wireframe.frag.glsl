@@ -1,7 +1,11 @@
-#version 430 core
+#version 460 core
 
-layout(location = 0) out vec4 color;
+layout(location=0) out vec4 color;
+layout(location=1) out uvec4 id;
+
+flat in uint faceID;
 
 void main() {
-    color = vec4(1.0);
+    color = vec4(vec3(gl_PrimitiveID % 20 * 0.03 + 0.4), 1.0);
+    id = uvec4(gl_PrimitiveID, 0, 0, 0);
 }

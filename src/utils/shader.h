@@ -9,6 +9,10 @@ class Shader {
     uint ID; 
 
 public:
+    static Shader From(const char *vertexPath, const char *fragmentPath) {
+        return Shader().compile(vertexPath, fragmentPath);
+    }
+
     Shader& compile(const char *vertexPath, const char *fragmentPath);
     void use() const { glUseProgram(ID); }
 

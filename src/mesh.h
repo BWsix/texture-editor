@@ -1,7 +1,10 @@
+#pragma once
+
 #include "utils/includes.h"
 #include "utils/shader.h"
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+#include <set>
 
 struct MyTraits : OpenMesh::DefaultTraits {
     // Define vertex and normal as double
@@ -22,19 +25,20 @@ struct MyVertex {
 };
 
 class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits> {
-    GLuint VAO;
-    GLuint VAO_POSITIONS;
-    GLuint VBO;
-    GLuint VBO_POSITIONS;
+    GLuint vao;
+    GLuint vbo;
+
+    GLuint vao_positions;
+    GLuint vbo_positions;
 
 public:
     bool loadFromFile(std::string filename);
     void setup();
 
     void render(Shader &shader) const;
-    void highlight(Shader &shader, const std::vector<uint> &indicies) const;
+    void highlightFaces(Shader &shader, const std::set<uint> &face_ids) const;
 
-    glm::vec3 d2f(OpenMesh::Vec3d v) { return glm::vec3(v[0], v[1], v[2]); }
+    glm::vec3 d2f(OpenMesh::Vec3d v) const { return glm::vec3(v[0], v[1], v[2]); }
 
 private:
     // halfedge, face, and vertex normals
