@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "utils/shader.h"
 #include <beamlib/blib.h>
+#include <cstdlib>
 #include <glad/gl.h>
 #include <iostream>
 
@@ -23,9 +24,13 @@ class Screen {
 
     GLuint *ids;
 public:
+    uint width, height;
+
+    Screen(uint width, uint height): width(width), height(height){}
 
     void render(Shader prog) {
         glDisable(GL_DEPTH_TEST);
+        glViewport(0, 0, width, height < 1 ? 1 : height);
         prog.use();
         glBindVertexArray(vao);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -47,12 +52,38 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    uint getId(ImVec2 pos) {
-        return ids[size_t((1080 - pos.y) * 1920 + pos.x)];
+    uint getFaceId(ImVec2 pos) {
+        return ids[size_t((height - pos.y) * width + pos.x)];
+    }
+
+    void resize(uint width, uint height) {
+        this->width = width;
+        this->height = height;
+        ids = (uint *)realloc(ids, sizeof(uint) * width * height);
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
+
+        glBindTexture(GL_TEXTURE_2D, texture_faceid);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width, height, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, texture_faceid, 0);
+
+        glBindTexture(GL_TEXTURE_2D, texture_depth);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_depth, 0);
     }
 
     void loadResources() {
-        ids = new GLuint[1920 * 1080];
+        ids = new GLuint[width * height];
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
@@ -71,7 +102,7 @@ public:
 
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1920, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -80,14 +111,14 @@ public:
 
         glGenTextures(1, &texture_faceid);
         glBindTexture(GL_TEXTURE_2D, texture_faceid);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, 1920, 1080, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width, height, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, texture_faceid, 0);
 
         glGenTextures(1, &texture_depth);
         glBindTexture(GL_TEXTURE_2D, texture_depth);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1920, 1080, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_depth, 0);

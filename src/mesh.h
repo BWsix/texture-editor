@@ -1,5 +1,6 @@
 #pragma once
 
+#include "imgui.h"
 #include "utils/includes.h"
 #include "utils/shader.h"
 #include <OpenMesh/Core/IO/MeshIO.hh>
@@ -17,7 +18,6 @@ struct MyTraits : OpenMesh::DefaultTraits {
 };
 
 struct MyVertex {
-    uint faceID;
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texCoords = {0, 0};
@@ -25,25 +25,111 @@ struct MyVertex {
 };
 
 class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits> {
+    std::vector<MyVertex> my_vertices;
+    std::vector<uint> my_indices;
+
     GLuint vao;
     GLuint vbo;
-
-    GLuint vao_positions;
-    GLuint vbo_positions;
+    GLuint ebo;
 
 public:
+    OpenMesh::FPropHandleT<bool> selected;
+    OpenMesh::EPropHandleT<float> weight;
+    OpenMesh::VPropHandleT<glm::vec2> UV;
+    OpenMesh::VPropHandleT<float> W;
+
+    MyMesh() {
+        add_property(selected);
+        add_property(weight);
+        add_property(UV);
+        add_property(W);
+    }
+
+    void select(uint face_id) { property(selected, face_handle(face_id)) = true; }
+    void reset() { std::for_each(faces_begin(), faces_end(), [this](auto f){ property(selected, f) = false; }); }
+
     bool loadFromFile(std::string filename);
     void setup();
+    void calcWeight();
+    void updateVertexData(uint vertexID);
 
     void render(Shader &shader) const;
-    void highlightFaces(Shader &shader, const std::set<uint> &face_ids) const;
+    void highlightEdges(Shader &shader, const std::vector<int> &vertex_id) const;
+    void highlightPoints(Shader &shader, const std::vector<int> &vertex_id) const;
+    void highlightFaces(Shader &shader, const std::set<int> &face_ids) const;
+
+    std::vector<VertexHandle> getEdgePoints() {
+        std::set<VertexHandle> edge_points;
+        for (auto e : edges()) {
+            if (e.is_boundary()) {
+                edge_points.insert(e.v0());
+                edge_points.insert(e.v1());
+            }
+        }
+        return std::vector<VertexHandle>(edge_points.begin(), edge_points.end());
+    }
+
+    std::vector<VertexHandle> getInteriorPoints() {
+        std::set<VertexHandle> edge_points;
+        std::set<VertexHandle> interior_points;
+        for (auto e : edges()) {
+            if (e.is_boundary()) {
+                edge_points.insert(e.v0());
+                edge_points.insert(e.v1());
+            } else {
+                interior_points.insert(e.v0());
+                interior_points.insert(e.v1());
+            }
+        }
+        std::vector<VertexHandle> vhs;
+        std::set_difference(interior_points.begin(), interior_points.end(), edge_points.begin(), edge_points.end(), std::inserter(vhs, vhs.end()));
+        return vhs;
+    }
+
+    std::vector<FaceHandle> getFaces() {
+        std::vector<FaceHandle> fhs;
+        for (auto fh : faces()) {
+            fhs.push_back(fh);
+        }
+        return fhs;
+    }
+
+    std::vector<VertexHandle> getPoints() {
+        std::set<VertexHandle> edge_points;
+        for (auto e : edges()) {
+            edge_points.insert(e.v0());
+            edge_points.insert(e.v1());
+        }
+        return std::vector<VertexHandle>(edge_points.begin(), edge_points.end());
+    }
+
+    VertexHandle getClosestPoint(uint faceID, ImVec2 pos);
+
+    void update() {
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        for (auto vh : getPoints()) {
+            MyVertex v = {d2f(point(vh)), d2f(normal(vh)), property(UV, vh)};
+            glBufferSubData(GL_ARRAY_BUFFER, vh.idx() * sizeof(v), sizeof(v), &v);
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+    void renderUV(Shader shader);
+
+    void copy_vertices(MyMesh& other) {
+        for (auto it : this->vertices()) {
+            other.add_vertex(point(it));
+        }
+    }
 
     glm::vec3 d2f(OpenMesh::Vec3d v) const { return glm::vec3(v[0], v[1], v[2]); }
 
-private:
     // halfedge, face, and vertex normals
     OpenMesh::Vec3d normal(const HalfedgeHandle he) const;
     OpenMesh::Vec3d normal(const EdgeHandle e) const;
     OpenMesh::Vec3d normal(const FaceHandle f) const;
     OpenMesh::Vec3d normal(const VertexHandle v) const;
 };
+

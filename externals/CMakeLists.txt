@@ -2,6 +2,7 @@ add_subdirectory(blib)
 add_subdirectory(fmt)
 add_subdirectory(glm)
 add_subdirectory(OpenMesh)
+add_subdirectory(eigen)
 
 add_library(stb
     stb/stb_image.cpp

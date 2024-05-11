@@ -14,7 +14,7 @@ add_executable(editor
     mesh.h
 )
 
-target_link_libraries(editor PRIVATE beamlib glm stb OpenMeshCore OpenMeshTools fmt)
+target_link_libraries(editor PRIVATE beamlib glm stb OpenMeshCore OpenMeshTools fmt eigen)
 
 if(UNIX)
     target_compile_options(editor PRIVATE "-Wall" "-Wextra" "-ggdb")
