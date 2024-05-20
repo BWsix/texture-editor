@@ -1,4 +1,3 @@
-#include "OpenMesh/Core/IO/MeshIO.hh"
 #include "beamlib/blib.h"
 #include "glad/gl.h"
 #include "imgui.h"
@@ -7,10 +6,9 @@
 #include "utils/camera.h"
 #include "utils/mouse.h"
 #include "utils/shader.h"
-#include <algorithm>
-#include <iterator>
-#include <set>
 #include <map>
+#include <set>
+#include <Eigen/Dense>
 
 Screen main_screen(1920, 1080);
 Screen child_screen(500, 500);
@@ -84,6 +82,60 @@ void solve() {
         float length = (selected_mesh.point(heh.from()) - selected_mesh.point(heh.to())).length();
         accum += length;
         selected_mesh.property(selected_mesh.UV, heh.to()) = getUV(accum / total_length);
+    }
+
+    // Solving the shites
+
+    auto interior_points = selected_mesh.getInteriorPoints();
+    auto edge_points = selected_mesh.getEdgePoints();
+
+    Eigen::MatrixXf A(interior_points.size(), interior_points.size());
+    A.setZero();
+
+    Eigen::VectorXf bx(interior_points.size());
+    bx.setZero();
+    Eigen::VectorXf by(interior_points.size());
+    by.setZero();
+
+    std::map<int, MyMesh::VertexHandle> idx_to_vh;
+    for (size_t i = 0; i < interior_points.size(); i++) {
+        auto& vh = interior_points[i];
+        idx_to_vh[i] = vh;
+        selected_mesh.property(selected_mesh.idx, vh) = i;
+        A(i, i) = selected_mesh.property(selected_mesh.W, vh);
+    }
+    for (size_t i = 0; i < edge_points.size(); i++) {
+        auto vh = edge_points[i];
+        int idx = i + interior_points.size();
+        idx_to_vh[idx] = vh;
+        selected_mesh.property(selected_mesh.idx, vh) = idx;
+    }
+
+    for (int i = 0; i < interior_points.size(); i++) {
+        auto vh = interior_points[i];
+
+        for (auto it = selected_mesh.voh_iter(vh); it != selected_mesh.voh_end(vh); ++it) {
+            auto to = it->to();
+            auto eh = it->edge();
+            size_t idx = selected_mesh.property(selected_mesh.idx, to);
+            float weight = selected_mesh.property(selected_mesh.weight, eh);
+            glm::vec2 uv = selected_mesh.property(selected_mesh.UV, to);
+            if (idx < interior_points.size()) {
+                A(i, idx) = -weight;
+            } else {
+                bx[i] += weight * uv.x;
+                by[i] += weight * uv.y;
+            }
+        }
+    }
+
+    bx = (A.transpose() * A).ldlt().solve(A.transpose() * bx);
+    by = (A.transpose() * A).ldlt().solve(A.transpose() * by);
+
+    for (size_t i = 0; i < interior_points.size(); i++) {
+        auto vh = interior_points[i];
+        selected_mesh.property(selected_mesh.UV, vh).x = bx[i];
+        selected_mesh.property(selected_mesh.UV, vh).y = by[i];
     }
 }
 
@@ -244,13 +296,6 @@ int main() {
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         main_screen.render(programs.screen);
-
-        ImGui::SetNextWindowSize(ImVec2(500, 500));
-        ImGui::Begin("UV");
-        ImVec2 windowPos = ImGui::GetWindowPos();
-        glViewport(windowPos.x, windowPos.y, 500, 500);
-        ImGui::Text("Hi");
-        ImGui::End();
 
         Blib::EndUI();
         glfwSwapBuffers(window);

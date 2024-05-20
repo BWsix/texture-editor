@@ -20,10 +20,10 @@ const float quadVertices[] = {
 
 class Screen {
     GLuint vao, vbo, fbo;
-    GLuint texture, texture_faceid, texture_depth;
 
     GLuint *ids;
 public:
+    GLuint texture, texture_faceid, texture_depth;
     uint width, height;
 
     Screen(uint width, uint height): width(width), height(height){}

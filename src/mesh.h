@@ -35,14 +35,17 @@ class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits> {
 public:
     OpenMesh::FPropHandleT<bool> selected;
     OpenMesh::EPropHandleT<float> weight;
+
     OpenMesh::VPropHandleT<glm::vec2> UV;
     OpenMesh::VPropHandleT<float> W;
+    OpenMesh::VPropHandleT<size_t> idx;
 
     MyMesh() {
         add_property(selected);
         add_property(weight);
         add_property(UV);
         add_property(W);
+        add_property(idx);
     }
 
     void select(uint face_id) { property(selected, face_handle(face_id)) = true; }
@@ -60,7 +63,7 @@ public:
 
     std::vector<VertexHandle> getEdgePoints() {
         std::set<VertexHandle> edge_points;
-        for (auto e : edges()) {
+        for (auto& e : edges()) {
             if (e.is_boundary()) {
                 edge_points.insert(e.v0());
                 edge_points.insert(e.v1());
@@ -70,19 +73,16 @@ public:
     }
 
     std::vector<VertexHandle> getInteriorPoints() {
-        std::set<VertexHandle> edge_points;
-        std::set<VertexHandle> interior_points;
-        for (auto e : edges()) {
-            if (e.is_boundary()) {
-                edge_points.insert(e.v0());
-                edge_points.insert(e.v1());
-            } else {
-                interior_points.insert(e.v0());
-                interior_points.insert(e.v1());
+        auto edges = getEdgePoints();
+        std::set<VertexHandle> edge_set(edges.begin(), edges.end());
+        auto total = getPoints();
+
+        std::vector<VertexHandle> vhs;
+        for (auto vh : total) {
+            if (edge_set.count(vh) == 0) {
+                vhs.push_back(vh);
             }
         }
-        std::vector<VertexHandle> vhs;
-        std::set_difference(interior_points.begin(), interior_points.end(), edge_points.begin(), edge_points.end(), std::inserter(vhs, vhs.end()));
         return vhs;
     }
 
