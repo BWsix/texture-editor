@@ -15,7 +15,7 @@ Screen child_screen(500, 500);
 
 std::set<uint> selected_face_ids;
 std::set<uint> selected_vertex_ids;
-uint selected_vertex_id;
+GLuint selected_vertex_id;
 MyMesh main_mesh;
 MyMesh selected_mesh;
 
@@ -26,7 +26,7 @@ void reset() {
     selected_vertex_ids.clear();
 }
 
-void build(uint face_id) {
+void build(GLuint face_id) {
     if (selected_face_ids.count(face_id)) {
         return;
     }
@@ -267,7 +267,7 @@ int main() {
 
         main_screen.updateIds();
         auto pos = ImGui::GetMousePos();
-        uint faceID;
+        GLuint faceID;
         if (pos.x <= 0 || pos.y <= 0) {
             faceID = 0;
         } else {

@@ -1,10 +1,14 @@
 #pragma once
 
+// windows support
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <OpenMesh/Core/IO/MeshIO.hh>
+#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+
 #include "imgui.h"
 #include "utils/includes.h"
 #include "utils/shader.h"
-#include <OpenMesh/Core/IO/MeshIO.hh>
-#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <set>
 
 struct MyTraits : OpenMesh::DefaultTraits {
@@ -21,7 +25,7 @@ struct MyVertex {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texCoords = {0, 0};
-    uint texID = 0;
+    GLuint texID = 0;
 };
 
 class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits> {

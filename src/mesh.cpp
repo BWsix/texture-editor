@@ -1,7 +1,10 @@
-#include "mesh.h"
+// windows support
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh"
+
+#include "mesh.h"
 #include "utils/camera.h"
-#include "utils/dbg.h"
 
 bool MyMesh::loadFromFile(std::string filename) {
     OpenMesh::IO::Options opt = OpenMesh::IO::Options::VertexNormal;
@@ -54,7 +57,7 @@ void MyMesh::setup() {
     glBindVertexArray(0);
 }
 
-void MyMesh::updateVertexData(uint vertexID) {
+void MyMesh::updateVertexData(GLuint vertexID) {
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     //TODO
