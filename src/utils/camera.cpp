@@ -26,11 +26,22 @@ void Camera::update(GLFWwindow* window) {
     if (middle_pressed && shift_pressed) {
         glm::vec3 up = glm::vec3(0, 1, 0);
         glm::vec3 right = glm::cross(getFront(), up);
-        center -= 0.001f * mouse.getMiddleDelta().x * right;
-        center += 0.001f * mouse.getMiddleDelta().y * up;
+        float sensitivity = 0.0005f;
+        center -= radius * sensitivity * mouse.getMiddleDelta().x * right;
+        center += radius * sensitivity * mouse.getMiddleDelta().y * up;
     }
 
-    if (radius < 0.1) {
-        radius = 0.1;
+    if (radius < 0.01) {
+        radius = 0.01;
     }
+}
+
+void Camera::renderCenter(Shader prog) {
+    prog.use();
+    prog.setVec3("pos", center);
+    prog.setMat4("model", glm::mat4(1));
+    prog.setMat4("view", getViewMatrix());
+    prog.setMat4("projection", getProjectionMatrix());
+    glPointSize(5);
+    glDrawArrays(GL_POINTS, 0, 1);
 }

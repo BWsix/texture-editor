@@ -6,10 +6,12 @@
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
-#include "imgui.h"
 #include "utils/includes.h"
 #include "utils/shader.h"
 #include <set>
+
+#include "nlohmann/json.hpp"
+using json = nlohmann::json;
 
 struct MyTraits : OpenMesh::DefaultTraits {
     // Define vertex and normal as double
@@ -25,7 +27,22 @@ struct MyVertex {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texCoords = {0, 0};
-    GLuint texID = 0;
+
+    static MyVertex Load(const json& j) {
+        return {
+            glm::vec3(j["p"][0], j["p"][1], j["p"][2]),
+            glm::vec3(j["n"][0], j["n"][1], j["n"][2]),
+            glm::vec2(j["t"][0], j["t"][1]),
+        };
+    }
+
+    json serialize() const {
+        json j;
+        j["p"] = json::array({position.x, position.y, position.z});
+        j["n"] = json::array({normal.x, normal.y, normal.z});
+        j["t"] = json::array({texCoords.x, texCoords.y});
+        return j;
+    }
 };
 
 class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits> {
@@ -37,12 +54,15 @@ class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits> {
     GLuint ebo;
 
 public:
+    std::string name;
+    std::string texture_id;
+
     OpenMesh::FPropHandleT<bool> selected;
     OpenMesh::EPropHandleT<float> weight;
-
     OpenMesh::VPropHandleT<glm::vec2> UV;
     OpenMesh::VPropHandleT<float> W;
     OpenMesh::VPropHandleT<size_t> idx;
+    OpenMesh::HPropHandleT<size_t> face_idx;
 
     MyMesh() {
         add_property(selected);
@@ -50,20 +70,47 @@ public:
         add_property(UV);
         add_property(W);
         add_property(idx);
+        add_property(face_idx);
+    }
+
+    MyMesh(std::string texture_id, std::string name) : name(name), texture_id(texture_id) {}
+
+    static MyMesh Load(const json& j) {
+        MyMesh m(j["texture_id"], j["name"]);
+        std::vector<MyVertex> my_vertices;
+        for (const auto& v : j["vertices"]) {
+            my_vertices.push_back(MyVertex::Load(v));
+        }
+        m.loadVertices(my_vertices, j["indices"]);
+        return m;
     }
 
     void select(uint face_id) { property(selected, face_handle(face_id)) = true; }
     void reset() { std::for_each(faces_begin(), faces_end(), [this](auto f){ property(selected, f) = false; }); }
 
     bool loadFromFile(std::string filename);
+    void loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> indices);
     void setup();
     void calcWeight();
-    void updateVertexData(uint vertexID);
+
+    json serialize() const {
+        json j;
+        j["texture_id"] = texture_id;
+        j["name"] = name;
+
+        j["vertices"] = json::array();
+        for (const auto& v : my_vertices) {
+            j["vertices"].push_back(v.serialize());
+        }
+
+        j["indices"] = my_indices;
+        return j;
+    }
 
     void render(Shader &shader) const;
     void highlightEdges(Shader &shader, const std::vector<int> &vertex_id) const;
-    void highlightPoints(Shader &shader, const std::vector<int> &vertex_id) const;
-    void highlightFaces(Shader &shader, const std::set<int> &face_ids) const;
+    void highlightPoints(Shader &shader, const std::vector<int> &vertex_id, glm::vec3 color) const;
+    void highlightFaces(Shader &shader, const std::set<size_t> &face_ids, glm::vec3 color) const;
 
     std::vector<VertexHandle> getEdgePoints() {
         std::set<VertexHandle> edge_points;
@@ -74,6 +121,18 @@ public:
             }
         }
         return std::vector<VertexHandle>(edge_points.begin(), edge_points.end());
+    }
+
+    VertexHandle getClosestEdgePoint(glm::vec3 wp) {
+        auto vhs = getEdgePoints();
+
+        std::sort(vhs.begin(), vhs.end(), [this, wp](VertexHandle& vh1, VertexHandle& vh2){
+            auto p1 = d2f(point(vh1));
+            auto p2 = d2f(point(vh2));
+            return glm::length(wp - p1) < glm::length(wp - p2);
+        });
+
+        return vhs[0];
     }
 
     std::vector<VertexHandle> getInteriorPoints() {
@@ -107,12 +166,25 @@ public:
         return std::vector<VertexHandle>(edge_points.begin(), edge_points.end());
     }
 
-    VertexHandle getClosestPoint(uint faceID, ImVec2 pos);
-
-    void update() {
+    void updateUV(const std::vector<VertexHandle>& vhs) {
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        for (auto vh : getPoints()) {
+        for (const auto& vh : vhs) {
+            MyVertex v = {d2f(point(vh)), d2f(normal(vh)), property(UV, vh)};
+            glBufferSubData(GL_ARRAY_BUFFER, vh.idx() * sizeof(v), sizeof(v), &v);
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+    MyVertex getMyVertex(VertexHandle vh) {
+        return {d2f(point(vh)), d2f(normal(vh)), property(UV, vh)};
+    }
+
+    void updateUV() {
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        for (const auto& vh : getPoints()) {
             MyVertex v = {d2f(point(vh)), d2f(normal(vh)), property(UV, vh)};
             glBufferSubData(GL_ARRAY_BUFFER, vh.idx() * sizeof(v), sizeof(v), &v);
         }
@@ -121,6 +193,19 @@ public:
     }
 
     void renderUV(Shader shader);
+
+    std::vector<GLuint> getIndices()  {
+        std::vector<GLuint> indices;
+        for (const auto& fh : getFaces()) {
+            auto it = this->cfv_ccwbegin(fh);
+            indices.push_back(it->idx());
+            ++it;
+            indices.push_back(it->idx());
+            ++it;
+            indices.push_back(it->idx());
+        }
+        return indices;
+    }
 
     void copy_vertices(MyMesh& other) {
         for (auto it : this->vertices()) {
@@ -136,4 +221,3 @@ public:
     OpenMesh::Vec3d normal(const FaceHandle f) const;
     OpenMesh::Vec3d normal(const VertexHandle v) const;
 };
-

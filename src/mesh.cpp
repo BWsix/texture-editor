@@ -19,11 +19,38 @@ bool MyMesh::loadFromFile(std::string filename) {
     return isRead;
 }
 
+void MyMesh::loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> indices) {
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    my_vertices = vertices;
+
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, my_vertices.size() * sizeof(my_vertices[0]), my_vertices.data(), GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MyVertex), (void *)offsetof(MyVertex, position));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MyVertex), (void *)offsetof(MyVertex, normal));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(MyVertex), (void *)offsetof(MyVertex, texCoords));
+
+    my_indices = indices;
+
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, my_indices.size() * sizeof(my_indices[0]), my_indices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glBindVertexArray(0);
+}
+
 void MyMesh::setup() {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    for (VertexHandle vh : this->vertices()) {
+    for (const VertexHandle& vh : this->vertices()) {
         my_vertices.push_back({d2f(point(vh)), d2f(normal(vh))});
     }
 
@@ -37,10 +64,8 @@ void MyMesh::setup() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MyVertex), (void *)offsetof(MyVertex, normal));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(MyVertex), (void *)offsetof(MyVertex, texCoords));
-    glEnableVertexAttribArray(3);
-    glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(MyVertex), (void *)offsetof(MyVertex, texID));
 
-    for (FaceHandle f : this->faces()) {
+    for (const FaceHandle& f : this->faces()) {
         auto it = this->cfv_ccwbegin(f);
         my_indices.push_back(it->idx());
         ++it;
@@ -57,16 +82,13 @@ void MyMesh::setup() {
     glBindVertexArray(0);
 }
 
-void MyMesh::updateVertexData(GLuint vertexID) {
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    //TODO
-}
-
 void MyMesh::render(Shader &shader) const {
     shader.use();
     shader.setMat4("view", camera.getViewMatrix());
     shader.setMat4("projection", camera.getProjectionMatrix());
+
+    shader.setVec3("viewPos", camera.getPosition());
+    shader.setVec3("lightPos", camera.getPosition());
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -85,8 +107,9 @@ void MyMesh::highlightEdges(Shader &shader, const std::vector<int> &vertex_id) c
     glBindVertexArray(0);
 }
 
-void MyMesh::highlightPoints(Shader &shader, const std::vector<int> &vertex_id) const {
+void MyMesh::highlightPoints(Shader &shader, const std::vector<int> &vertex_id, glm::vec3 color) const {
     shader.use();
+    shader.setVec3("color", color);
     shader.setMat4("view", camera.getViewMatrix());
     shader.setMat4("projection", camera.getProjectionMatrix());
 
@@ -95,7 +118,7 @@ void MyMesh::highlightPoints(Shader &shader, const std::vector<int> &vertex_id) 
     glBindVertexArray(0);
 }
 
-void MyMesh::highlightFaces(Shader &shader, const std::set<int> &face_ids) const {
+void MyMesh::highlightFaces(Shader &shader, const std::set<size_t> &face_ids, glm::vec3 color) const {
     std::vector<uint> indices;
     for (uint id : face_ids) {
         auto f = this->face_handle(id);
@@ -112,6 +135,8 @@ void MyMesh::highlightFaces(Shader &shader, const std::set<int> &face_ids) const
     }
 
     shader.use();
+    shader.setVec3("color", color);
+    shader.setMat4("model", glm::mat4(1));
     shader.setMat4("view", camera.getViewMatrix());
     shader.setMat4("projection", camera.getProjectionMatrix());
 
@@ -154,7 +179,7 @@ OpenMesh::Vec3d MyMesh::normal(const VertexHandle v) const {
 }
 
 void MyMesh::calcWeight() {
-    for (auto eh : edges()) {
+    for (const auto& eh : edges()) {
         double w = 0.0;
         for (int i = 0; i < 2; i++) {
             auto heh0 = eh.halfedge(i).next();
@@ -167,7 +192,7 @@ void MyMesh::calcWeight() {
         property(weight, eh) = w;
     }
 
-    for (auto vh : this->vertices()) {
+    for (const auto& vh : this->vertices()) {
         float w = 0;
         for (auto eh = ve_begin(vh); eh != ve_end(vh); ++eh) {
             w += property(weight, eh);
@@ -177,15 +202,7 @@ void MyMesh::calcWeight() {
 }
 
 void MyMesh::renderUV(Shader shader) {
-    std::vector<uint> indices;
-    for (auto fh : getFaces()) {
-        auto it = this->cfv_ccwbegin(fh);
-        indices.push_back(it->idx());
-        ++it;
-        indices.push_back(it->idx());
-        ++it;
-        indices.push_back(it->idx());
-    }
+    std::vector<GLuint> indices = getIndices();
 
     shader.use();
     shader.setMat4("view", camera.getViewMatrix());
@@ -193,35 +210,4 @@ void MyMesh::renderUV(Shader shader) {
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.data());
     glBindVertexArray(0);
-}
-
-MyMesh::VertexHandle MyMesh::getClosestPoint(uint faceID, ImVec2 pos) {
-    GLint vp[4];
-    glGetIntegerv(GL_VIEWPORT, vp);
-    glm::vec4 viewport(vp[0],vp[1],vp[2],vp[3]);
-
-    int windowX = pos.x;
-    int windowY = 1080 - pos.y;
-
-    float d;
-    glReadPixels(windowX, windowY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &d);
-
-    glm::vec3 win(windowX, windowY, d);
-    glm::vec3 wp = glm::unProject(win, camera.getViewMatrix(), camera.getProjectionMatrix(), viewport);
-
-    std::vector<VertexHandle> vhs;
-    auto it = this->cfv_ccwbegin(face_handle(faceID));
-    vhs.push_back(*it);
-    ++it;
-    vhs.push_back(*it);
-    ++it;
-    vhs.push_back(*it);
-    
-    std::sort(vhs.begin(), vhs.end(), [this, wp](VertexHandle& vh1, VertexHandle& vh2){
-        auto p1 = d2f(point(vh1));
-        auto p2 = d2f(point(vh2));
-        return glm::length(wp - p1) < glm::length(wp - p2);
-    });
-
-    return vhs[0];
 }

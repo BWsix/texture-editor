@@ -30,7 +30,6 @@ public:
 
     void render(Shader prog) {
         glDisable(GL_DEPTH_TEST);
-        glViewport(0, 0, width, height < 1 ? 1 : height);
         prog.use();
         glBindVertexArray(vao);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -52,14 +51,19 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    uint getFaceId(ImVec2 pos) {
-        return ids[size_t((height - pos.y) * width + pos.x)];
+    GLuint getFaceId(ImVec2 pos) {
+        if (pos.x <= 0 || pos.y <= 0 || pos.x >= width || pos.y >= height) {
+            return 0;
+        }
+
+        size_t y = height - pos.y;
+        return ids[GLuint(y * width + pos.x)];
     }
 
-    void resize(uint width, uint height) {
+    void resize(GLuint width, GLuint height) {
         this->width = width;
         this->height = height;
-        ids = (uint *)realloc(ids, sizeof(uint) * width * height);
+        ids = (GLuint *)realloc(ids, sizeof(GLuint) * width * height);
 
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);

@@ -3,10 +3,10 @@
 layout(location=0) out vec4 fragColor;
 
 uniform vec3 color;
+uniform sampler2D tex;
 
-in vec3 FragPos;
-in vec3 Normal;
+in vec2 texCoords;
 
 void main() {
-    fragColor = vec4(color, 0.5);
+    fragColor = vec4(1);
 }

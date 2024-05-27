@@ -16,3 +16,8 @@
 
 !src/
 !src/**/*
+
+!textures/
+!textures/**/*
+
+!dragon.json
