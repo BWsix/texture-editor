@@ -11,5 +11,5 @@ uniform sampler2D specular;
 in vec2 texCoords;
 
 void main() {
-    fragColor = texture2D(diffuse, texCoords);
+    fragColor = texture(diffuse, texCoords);
 }
