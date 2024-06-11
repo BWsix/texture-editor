@@ -315,7 +315,7 @@ void TextureEditor::saveSelectedMesh() {
 
     auto new_mesh = MyMesh(textures.selected_texture, "New Mesh", selected_mesh.scale);
     new_mesh.loadVertices(vertices, indices);
-    new_mesh.name = saved_meshes.back().name;
+    new_mesh.name = saved_meshes.size() ? saved_meshes.back().name : "New Mesh";
     saved_meshes.push_back(new_mesh);
 }
 
