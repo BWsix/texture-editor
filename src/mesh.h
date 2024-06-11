@@ -30,9 +30,20 @@ struct MyVertex {
 
     static MyVertex Load(const json& j) {
         return {
-            glm::vec3(j["p"][0], j["p"][1], j["p"][2]),
-            glm::vec3(j["n"][0], j["n"][1], j["n"][2]),
-            glm::vec2(j["t"][0], j["t"][1]),
+            glm::vec3(
+                j["p"][0].is_null() ? 0.0 : float(j["p"][0]),
+                j["p"][1].is_null() ? 0.0 : float(j["p"][1]),
+                j["p"][2].is_null() ? 0.0 : float(j["p"][2])
+            ),
+            glm::vec3(
+                j["n"][0].is_null() ? 0.0 : float(j["n"][0]),
+                j["n"][1].is_null() ? 0.0 : float(j["n"][1]),
+                j["n"][2].is_null() ? 0.0 : float(j["n"][2])
+            ),
+            glm::vec2(
+                j["t"][1].is_null() ? 0.0 : float(j["t"][1]),
+                j["t"][0].is_null() ? 0.0 : float(j["t"][0])
+            ),
         };
     }
 
