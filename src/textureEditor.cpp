@@ -125,14 +125,11 @@ void TextureEditor::fill() {
 
     for (auto [_, first_heh] : boundary_length) {
         addFace(selected_mesh.property(selected_mesh.face_idx, first_heh));
-        for (auto heh = first_heh.next(); heh != first_heh; heh = heh.next()) {
-            addFace(selected_mesh.property(selected_mesh.face_idx, heh));
-        }
     }
 
     if (!boundary_length.empty()) {
         std::cout << "not empty\n";
-        // return fill();
+        return fill();
     }
 }
 
