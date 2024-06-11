@@ -49,7 +49,7 @@ int main() {
         {
             editor.renderBaseModle();
 
-            if (!ImGui::IsKeyDown(ImGuiKey_Space)) {
+            if (!ImGui::IsKeyDown(ImGuiKey_Q)) {
                 editor.renderSavedMeshes(editor.programs.uv);
             }
 

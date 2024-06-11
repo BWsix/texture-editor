@@ -519,7 +519,7 @@ void TextureEditor::highlightHovered(){
     }
     main_mesh.highlightFaces(programs.highlight, getFaceIdWithRadius(faceID), color);
 
-    if (ImGui::IsKeyDown(ImGuiKey_Space)) {
+    if (ImGui::IsKeyDown(ImGuiKey_Q)) {
         glm::vec3 color(0, 1, 1);
         glPointSize(20);
         main_mesh.highlightPoints(programs.highlight, {(int)closest_edge_point_id}, color);
@@ -531,7 +531,7 @@ void TextureEditor::renderSelected() {
     programs.uv.setMat4("model", glm::mat4(1));
     selected_mesh.updateUV();
 
-    if (ImGui::IsKeyDown(ImGuiKey_Space)) {
+    if (ImGui::IsKeyDown(ImGuiKey_Q)) {
         textures.bind("_grid.jpg", programs.uv);
     } else {
         textures.bindSelected(programs.uv);
