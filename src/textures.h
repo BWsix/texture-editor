@@ -33,7 +33,9 @@ public:
         store.at(path).Bind(prog);
     }
 
-    void renderPicker(int col = 0) {
+    bool renderPicker(int col = 0) {
+        bool picked = false;
+
         ImGuiStyle& style = ImGui::GetStyle();
         int buttons_count = 20;
         float window_visible_x2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
@@ -45,6 +47,7 @@ public:
             if (ImGui::ImageButton((ImTextureID)texture.diffuse, {(float)sz, (float)sz}, {0, 1}, {1, 0})) {
                 selected_texture = name;
                 ImGui::CloseCurrentPopup();
+                picked = true;
             }
 
             if (col) {
@@ -62,6 +65,8 @@ public:
             ImGui::PopID();
             n += 1;
         }
+
+        return picked;
     }
 };
 

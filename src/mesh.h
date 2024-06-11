@@ -126,10 +126,13 @@ public:
     VertexHandle getClosestEdgePoint(glm::vec3 wp) {
         auto vhs = getEdgePoints();
 
-        std::sort(vhs.begin(), vhs.end(), [this, wp](VertexHandle& vh1, VertexHandle& vh2){
-            auto p1 = d2f(point(vh1));
-            auto p2 = d2f(point(vh2));
-            return glm::length(wp - p1) < glm::length(wp - p2);
+        std::map<int, float> distance;
+        for (const auto& vh : vhs) {
+            distance[vh.idx()] = glm::length(wp - d2f(point(vh)));
+        }
+
+        std::partial_sort(vhs.begin(), vhs.begin() + 1, vhs.end(), [&distance](VertexHandle& vh1, VertexHandle& vh2){
+            return distance[vh1.idx()] < distance[vh2.idx()];
         });
 
         return vhs[0];

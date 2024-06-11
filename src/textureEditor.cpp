@@ -318,6 +318,7 @@ void TextureEditor::saveSelectedMesh() {
 
     auto new_mesh = MyMesh(textures.selected_texture, "New Mesh");
     new_mesh.loadVertices(vertices, indices);
+    new_mesh.name = saved_meshes.back().name;
     saved_meshes.push_back(new_mesh);
 }
 
@@ -541,7 +542,7 @@ void TextureEditor::renderSelected() {
 void TextureEditor::renderMeshLayerEditor() {
     ImGui::Begin("Mesh", NULL);
 
-    static std::string filename = "output.json";
+    static std::string filename = "dragon.json";
     filename.reserve(512);
     ImGui::InputText("##Filename", &filename[0], filename.capacity());
     ImGui::SameLine();
@@ -559,7 +560,7 @@ void TextureEditor::renderMeshLayerEditor() {
     ImGui::Separator();
 
     bool hovered = false;
-    for (size_t n = 0; n < saved_meshes.size(); n++) {
+    for (int n = saved_meshes.size() - 1; n >= 0; n--) {
         ImGui::PushID(n);
 
         auto item = std::to_string(n);
@@ -583,6 +584,14 @@ void TextureEditor::renderMeshLayerEditor() {
         ImGui::SameLine();
         if (ImGui::Button("Move v")) {
             std::swap(saved_meshes[n], saved_meshes[n + 1]);
+        }
+
+        ImGui::SameLine();
+        if (ImGui::TreeNode("Change Texture")) {
+            if (textures.renderPicker(3)) {
+                saved_meshes[n].texture_id = textures.selected_texture;
+            }
+            ImGui::TreePop();
         }
 
         ImGui::PopID();
