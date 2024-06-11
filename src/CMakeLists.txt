@@ -1,6 +1,8 @@
 add_executable(editor
     utils/camera.cpp
     utils/camera.h
+    utils/transform.cpp
+    utils/transform.h
     utils/includes.h
     utils/mouse.cpp
     utils/mouse.h

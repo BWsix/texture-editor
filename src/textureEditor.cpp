@@ -32,7 +32,7 @@ void TextureEditor::setup() {
 }
 
 void TextureEditor::handleFaceSelector() {
-    if (ImGui::GetIO().WantCaptureMouse) {
+    if (ImGui::GetIO().WantCaptureMouseUnlessPopupClose) {
         return;
     }
 
@@ -44,7 +44,7 @@ void TextureEditor::handleFaceSelector() {
         }
         faceID -= 1;
 
-        if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+        if (ImGui::IsKeyDown(ImGuiKey_MouseRight)) {
             deleteFace(faceID);
         } else {
             addFace(faceID);
@@ -392,7 +392,7 @@ void TextureEditor::renderLiveUVSolver() {
 }
 
 void TextureEditor::renderPopupMenu() {
-    if (ImGui::IsKeyDown(ImGuiKey_MouseRight)) {
+    if (ImGui::IsKeyDown(ImGuiKey_E)) {
         ImGui::OpenPopup("my_popup");
     }
     if (ImGui::BeginPopup("my_popup")) {
@@ -499,7 +499,7 @@ void TextureEditor::h() {
 }
 
 void TextureEditor::highlightHovered(){
-    if (ImGui::GetIO().WantCaptureMouse) {
+    if (ImGui::GetIO().WantCaptureMouseUnlessPopupClose) {
         return;
     }
 
@@ -511,7 +511,7 @@ void TextureEditor::highlightHovered(){
     faceID -= 1;
 
     glm::vec3 color(0, 1, 0);
-    if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+    if (ImGui::IsKeyDown(ImGuiKey_MouseRight)) {
         color = glm::vec3(1, 0, 0);
     }
     main_mesh.highlightFaces(programs.highlight, getFaceIdWithRadius(faceID), color);

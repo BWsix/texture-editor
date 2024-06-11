@@ -14,7 +14,6 @@
 
 TextureEditor editor;
 
-
 int main() {
     auto *const window = Blib::CreateWindow("texture editor", 1920, 1080);
 
@@ -22,11 +21,6 @@ int main() {
         editor.main_screen.resize(width, height);
         camera.setAspect((float)width / height);
         glViewport(0, 0, width, height < 1 ? 1 : height);
-    });
-
-    glfwSetScrollCallback(window, [](GLFWwindow *window, double x, double y) {
-        (void)window; (void)x;
-        camera.offsetRadius(-y * 0.1);
     });
 
     glEnable(GL_BLEND);
@@ -53,9 +47,6 @@ int main() {
         {
             editor.renderBaseModle();
 
-            if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
-                camera.renderCenter(editor.programs.point);
-            }
             if (!ImGui::IsKeyDown(ImGuiKey_Space)) {
                 editor.renderSavedMeshes(editor.programs.uv);
             }
