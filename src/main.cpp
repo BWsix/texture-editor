@@ -1,6 +1,7 @@
 #include "beamlib/blib.h"
 #include "glad/gl.h"
 #include "imgui.h"
+#include "imgui_impl_glfw.h"
 #include "mesh.h"
 #include "screen.h"
 #include "textureEditor.h"
@@ -23,7 +24,10 @@ int main() {
         glViewport(0, 0, width, height < 1 ? 1 : height);
     });
 
-    camera.t.position = {0, 0, 0.5};
+    glfwSetScrollCallback(window, [](GLFWwindow *window, double x, double y) {
+        camera.offsetRadius(-y * 0.1);
+        ImGui_ImplGlfw_ScrollCallback(window, x, y);
+    });
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
@@ -49,7 +53,10 @@ int main() {
         {
             editor.renderBaseModle();
 
-            if (!ImGui::IsKeyDown(ImGuiKey_Q)) {
+            if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+                camera.renderCenter(editor.programs.point);
+            }
+            if (!ImGui::IsKeyDown(ImGuiKey_Space)) {
                 editor.renderSavedMeshes(editor.programs.uv);
             }
 
