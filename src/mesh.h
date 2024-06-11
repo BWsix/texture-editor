@@ -57,6 +57,8 @@ public:
     std::string name;
     std::string texture_id;
 
+    float scale = 1.0;
+
     OpenMesh::FPropHandleT<bool> selected;
     OpenMesh::EPropHandleT<float> weight;
     OpenMesh::VPropHandleT<glm::vec2> UV;
@@ -73,10 +75,10 @@ public:
         add_property(face_idx);
     }
 
-    MyMesh(std::string texture_id, std::string name) : name(name), texture_id(texture_id) {}
+    MyMesh(std::string texture_id, std::string name, float scale) : name(name), texture_id(texture_id), scale(scale) {}
 
     static MyMesh Load(const json& j) {
-        MyMesh m(j["texture_id"], j["name"]);
+        MyMesh m(j["texture_id"], j["name"], (j["scale"].is_number() ? float(j["scale"]) : 1.0));
         std::vector<MyVertex> my_vertices;
         for (const auto& v : j["vertices"]) {
             my_vertices.push_back(MyVertex::Load(v));
@@ -97,6 +99,7 @@ public:
         json j;
         j["texture_id"] = texture_id;
         j["name"] = name;
+        j["scale"] = scale;
 
         j["vertices"] = json::array();
         for (const auto& v : my_vertices) {

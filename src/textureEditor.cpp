@@ -316,7 +316,7 @@ void TextureEditor::saveSelectedMesh() {
         i = vertex_idx_mapper[i];
     }
 
-    auto new_mesh = MyMesh(textures.selected_texture, "New Mesh");
+    auto new_mesh = MyMesh(textures.selected_texture, "New Mesh", selected_mesh.scale);
     new_mesh.loadVertices(vertices, indices);
     new_mesh.name = saved_meshes.back().name;
     saved_meshes.push_back(new_mesh);
@@ -390,6 +390,7 @@ void TextureEditor::renderLiveUVSolver() {
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_AlwaysAutoResize;
     ImGui::Begin("Live UV solver", NULL, flags);
     ImGui::Image((ImTextureID)child_screen.texture, {500, 500});
+    ImGui::SliderFloat("Scale", &selected_mesh.scale, 0.1, 2.0);
     ImGui::End();
 }
 
@@ -565,13 +566,14 @@ void TextureEditor::renderMeshLayerEditor() {
 
         auto item = std::to_string(n);
 
-        ImGui::InputText("##Name", &saved_meshes[n].name[0], saved_meshes[n].name.capacity());
+        ImGui::InputText("Name", &saved_meshes[n].name[0], saved_meshes[n].name.capacity());
         if (ImGui::IsItemHovered()) {
             hovered = true;
             highlighted_mesh_idx = n;
         }
 
-        ImGui::SameLine();
+        ImGui::SliderFloat("Scale", &saved_meshes[n].scale, 0.1, 2.0);
+
         if (ImGui::Button("Delete")) {
             saved_meshes.erase(saved_meshes.begin() + n);
         }

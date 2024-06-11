@@ -84,6 +84,7 @@ void MyMesh::setup() {
 
 void MyMesh::render(Shader &shader) const {
     shader.use();
+    shader.setFloat("scale", scale);
     shader.setMat4("view", camera.getViewMatrix());
     shader.setMat4("projection", camera.getProjectionMatrix());
 
@@ -207,6 +208,7 @@ void MyMesh::renderUV(Shader shader) {
     shader.use();
     shader.setMat4("view", camera.getViewMatrix());
     shader.setMat4("projection", camera.getProjectionMatrix());
+    shader.setFloat("scale", scale);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.data());
     glBindVertexArray(0);
