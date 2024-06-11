@@ -23,6 +23,8 @@ int main() {
         glViewport(0, 0, width, height < 1 ? 1 : height);
     });
 
+    camera.t.position = {0, 0, 0.5};
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 

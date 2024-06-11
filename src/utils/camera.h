@@ -1,6 +1,5 @@
 #pragma once
 
-#include "shader.h"
 #include "transform.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
@@ -20,9 +19,9 @@ class Camera {
     float sensitivity = 0.05;
     float movementSpeed = 0.2;
 
-    Transform t;
 
 public:
+    Transform t;
     void setAspect(float aspect) { this->aspect = aspect; }
 
     glm::vec3 getFront() const {
@@ -38,8 +37,6 @@ public:
         return glm::perspective(glm::radians(fovy), aspect, near, far);
     }
     void update(GLFWwindow* window);
-
-    void renderCenter(Shader prog);
 };
 
 extern Camera camera;

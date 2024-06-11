@@ -109,11 +109,11 @@ void TextureEditor::fill() {
 
         OpenMesh::SmartHalfedgeHandle first_heh = _heh;
         int length = 1;
-        std::cout << "new edge!\n  " << _heh.idx() << "\n";
+        // std::cout << "new edge!\n  " << _heh.idx() << "\n";
         visited_boundaries.insert(_heh.idx());
         for (auto heh = first_heh.next(); heh != first_heh; heh = heh.next()) {
             length += 1;
-            std::cout << "  " << heh.idx() << "\n";
+            // std::cout << "  " << heh.idx() << "\n";
             visited_boundaries.insert(heh.idx());
         }
 
@@ -128,8 +128,9 @@ void TextureEditor::fill() {
     }
 
     if (!boundary_length.empty()) {
-        std::cout << "not empty\n";
         return fill();
+    } else {
+        return solveUV();
     }
 }
 
@@ -321,7 +322,9 @@ void TextureEditor::saveSelectedMesh() {
 
 void TextureEditor::loadSavedMeshes(json j) {
     saved_meshes.clear();
+    int i = 0;
     for (const auto& m : j["meshes"]) {
+        std::cout << i++ << "\n";
         saved_meshes.push_back(MyMesh::Load(m));
     }
 }
