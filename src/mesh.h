@@ -41,8 +41,8 @@ struct MyVertex {
                 j["n"][2].is_null() ? 0.0 : float(j["n"][2])
             ),
             glm::vec2(
-                j["t"][1].is_null() ? 0.0 : float(j["t"][1]),
-                j["t"][0].is_null() ? 0.0 : float(j["t"][0])
+                j["t"][0].is_null() ? 0.0 : float(j["t"][0]),
+                j["t"][1].is_null() ? 0.0 : float(j["t"][1])
             ),
         };
     }
