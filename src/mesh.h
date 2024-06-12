@@ -13,6 +13,8 @@
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
+using I2F = std::map<std::tuple<int, int, int>, int>;
+
 struct MyTraits : OpenMesh::DefaultTraits {
     // Define vertex and normal as double
     using Point = OpenMesh::Vec3d;
@@ -59,6 +61,7 @@ struct MyVertex {
 class MyMesh : public OpenMesh::TriMesh_ArrayKernelT<MyTraits> {
     std::vector<MyVertex> my_vertices;
     std::vector<uint> my_indices;
+    std::vector<uint> my_indices_original;
 
     GLuint vao;
     GLuint vbo;
@@ -94,7 +97,7 @@ public:
         for (const auto& v : j["vertices"]) {
             my_vertices.push_back(MyVertex::Load(v));
         }
-        m.loadVertices(my_vertices, j["indices"]);
+        m.loadVertices(my_vertices, j["indices"], j["original_indices"]);
         return m;
     }
 
@@ -102,8 +105,8 @@ public:
     void reset() { std::for_each(faces_begin(), faces_end(), [this](auto f){ property(selected, f) = false; }); }
 
     bool loadFromFile(std::string filename);
-    void loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> indices);
-    void setup();
+    void loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> indices, std::vector<GLuint> original_indices);
+    void setup(I2F& i2f, bool is_main_mesh = false);
     void calcWeight();
 
     json serialize() const {
@@ -118,6 +121,7 @@ public:
         }
 
         j["indices"] = my_indices;
+        j["original_indices"] = my_indices_original;
         return j;
     }
 
@@ -164,6 +168,19 @@ public:
             }
         }
         return vhs;
+    }
+
+    std::vector<GLuint> getFaceIds(I2F& i2f) {
+        std::vector<GLuint> face_ids;
+
+        for (size_t i = 0; i < my_indices.size(); i += 3) {
+            GLuint a = my_indices_original[i];
+            GLuint b = my_indices_original[i + 1];
+            GLuint c = my_indices_original[i + 2];
+            face_ids.push_back(i2f[{a, b, c}]);
+        }
+
+        return face_ids;
     }
 
     std::vector<FaceHandle> getFaces() {

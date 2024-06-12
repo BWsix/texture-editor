@@ -13,9 +13,9 @@ void TextureEditor::load(std::string path) {
         std::cerr << "TextureEditor fails to load " << path << "\n";
         exit(1);
     }
-    main_mesh.setup();
+    main_mesh.setup(indices_to_face_id, true);
     main_mesh.copy_vertices(selected_mesh);
-    selected_mesh.setup();
+    selected_mesh.setup(indices_to_face_id);
 }
 
 void TextureEditor::setup() {
@@ -60,8 +60,10 @@ void TextureEditor::handleFaceSelector() {
 }
 
 void TextureEditor::deleteFace(GLuint face_id) {
-    if (selected_face_ids.count(face_id)) {
-        selected_face_ids.erase(face_id);
+    for (auto idx : getFaceIdWithRadius(face_id)) {
+        if (selected_face_ids.count(idx)) {
+            selected_face_ids.erase(idx);
+        }
     }
     added_face_ids.clear();
     selected_mesh.clear();
@@ -168,6 +170,9 @@ std::set<size_t> TextureEditor::getFaceIdWithRadius(GLuint face_id) {
 
 void TextureEditor::addFace(GLuint face_id) {
     for (auto idx : getFaceIdWithRadius(face_id)) {
+        if (configs.radius > 1 && covered_face_ids.count(idx)) {
+            continue;
+        }
         selected_face_ids.insert(idx);
     }
 
@@ -309,23 +314,27 @@ void TextureEditor::saveSelectedMesh() {
         vertices.push_back(selected_mesh.getMyVertex(vh));
     }
 
-    std::vector<GLuint> indices = selected_mesh.getIndices();
-    for (GLuint& i : indices) {
-        i = vertex_idx_mapper[i];
+    std::vector<GLuint> original_indices = selected_mesh.getIndices();
+    std::vector<GLuint> indices;
+    for (GLuint& i : original_indices) {
+        indices.push_back(vertex_idx_mapper[i]);
     }
 
     auto new_mesh = MyMesh(textures.selected_texture, "New Mesh", selected_mesh.scale);
-    new_mesh.loadVertices(vertices, indices);
+    new_mesh.loadVertices(vertices, indices, original_indices);
     new_mesh.name = saved_meshes.size() ? saved_meshes.back().name : "New Mesh";
     saved_meshes.push_back(new_mesh);
+
+    auto ids = new_mesh.getFaceIds(indices_to_face_id);
+    covered_face_ids.insert(ids.begin(), ids.end());
 }
 
 void TextureEditor::loadSavedMeshes(json j) {
     saved_meshes.clear();
-    int i = 0;
     for (const auto& m : j["meshes"]) {
-        std::cout << i++ << "\n";
         saved_meshes.push_back(MyMesh::Load(m));
+        auto ids = saved_meshes.back().getFaceIds(indices_to_face_id);
+        covered_face_ids.insert(ids.begin(), ids.end());
     }
 }
 
@@ -348,7 +357,14 @@ void TextureEditor::renderSavedMeshes(Shader prog) {
 
     int idx = 0;
     for (const auto& mesh : saved_meshes) {
-        textures.bind(mesh.texture_id, prog);
+
+        if (configs.gold_mode) {
+            textures.bind("gold.jpg", prog);
+        } else if (configs.ugly_mode) {
+            textures.bind(mesh.texture_id, prog);
+        } else {
+            textures.bind("_grid.jpg", prog);
+        }
         mesh.render(prog);
 
         if (idx++ == highlighted_mesh_idx) {
@@ -391,6 +407,13 @@ void TextureEditor::renderLiveUVSolver() {
     ImGui::Begin("Live UV solver", NULL, flags);
     ImGui::Image((ImTextureID)child_screen.texture, {500, 500});
     ImGui::SliderFloat("Scale", &selected_mesh.scale, 0.1, 2.0);
+    ImGui::End();
+}
+
+void TextureEditor::renderMenu() {
+    ImGui::Begin("Menu");
+    ImGui::MenuItem("Toggle Gold Mode", NULL, &configs.gold_mode);
+    ImGui::MenuItem("Toggle Ugly Mode", NULL, &configs.ugly_mode);
     ImGui::End();
 }
 
@@ -523,15 +546,21 @@ void TextureEditor::highlightHovered(){
         glm::vec3 color(0, 1, 1);
         glPointSize(20);
         main_mesh.highlightPoints(programs.highlight, {(int)closest_edge_point_id}, color);
+
     }
 }
 
+void TextureEditor::highlightCoveredFaces() {
+    glm::vec3 color = {1, 1, 0};
+    std::set<size_t> ids(covered_face_ids.begin(), covered_face_ids.end());
+    main_mesh.highlightFaces(programs.highlight, ids, color);
+}
 void TextureEditor::renderSelected() {
     programs.uv.use();
     programs.uv.setMat4("model", glm::mat4(1));
     selected_mesh.updateUV();
 
-    if (ImGui::IsKeyDown(ImGuiKey_Q)) {
+    if (ImGui::IsKeyDown(ImGuiKey_Space)) {
         textures.bind("_grid.jpg", programs.uv);
     } else {
         textures.bindSelected(programs.uv);
@@ -544,7 +573,7 @@ void TextureEditor::renderMeshLayerEditor() {
     ImGui::Begin("Mesh", NULL);
 
     static std::string filename = "dragon.json";
-    filename.reserve(512);
+    filename.reserve(1024);
     ImGui::InputText("##Filename", &filename[0], filename.capacity());
     ImGui::SameLine();
     if (ImGui::Button("Load")) {
@@ -574,8 +603,26 @@ void TextureEditor::renderMeshLayerEditor() {
 
         ImGui::SliderFloat("Scale", &saved_meshes[n].scale, 0.1, 2.0);
 
+        if (ImGui::Button("Edit")) {
+            reset();
+
+            auto it = saved_meshes.begin() + n;
+            auto ids = it->getFaceIds(indices_to_face_id);
+
+            selected_face_ids.insert(ids.begin(), ids.end());
+            acuallyAddingFace();
+            solveUV();
+
+            saved_meshes.erase(it);
+        }
+
+        ImGui::SameLine();
         if (ImGui::Button("Delete")) {
-            saved_meshes.erase(saved_meshes.begin() + n);
+            auto it = saved_meshes.begin() + n;
+            for (auto id : it->getFaceIds(indices_to_face_id)) {
+                covered_face_ids.erase(covered_face_ids.find(id));
+            }
+            saved_meshes.erase(it);
         }
 
         ImGui::SameLine();

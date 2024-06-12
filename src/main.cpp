@@ -46,6 +46,7 @@ int main() {
         // ImGui::ShowDemoWindow();
         // ImGui::ShowMetricsWindow();
 
+        editor.renderMenu();
         editor.renderPopupMenu();
         editor.renderMeshLayerEditor();
 
@@ -56,7 +57,9 @@ int main() {
             if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
                 camera.renderCenter(editor.programs.point);
             }
-            if (!ImGui::IsKeyDown(ImGuiKey_Space)) {
+            if (ImGui::IsKeyDown(ImGuiKey_Space)) {
+                editor.highlightCoveredFaces();
+            } else {
                 editor.renderSavedMeshes(editor.programs.uv);
             }
 

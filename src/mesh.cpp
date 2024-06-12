@@ -19,7 +19,7 @@ bool MyMesh::loadFromFile(std::string filename) {
     return isRead;
 }
 
-void MyMesh::loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> indices) {
+void MyMesh::loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> indices, std::vector<GLuint> original_indices) {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
@@ -37,6 +37,7 @@ void MyMesh::loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> in
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(MyVertex), (void *)offsetof(MyVertex, texCoords));
 
     my_indices = indices;
+    my_indices_original = original_indices;
 
     glGenBuffers(1, &ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -46,7 +47,7 @@ void MyMesh::loadVertices(std::vector<MyVertex> vertices, std::vector<GLuint> in
     glBindVertexArray(0);
 }
 
-void MyMesh::setup() {
+void MyMesh::setup(I2F& i2f, bool is_main_mesh) {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
@@ -67,11 +68,20 @@ void MyMesh::setup() {
 
     for (const FaceHandle& f : this->faces()) {
         auto it = this->cfv_ccwbegin(f);
-        my_indices.push_back(it->idx());
+
+        int a = it->idx();
         ++it;
-        my_indices.push_back(it->idx());
+        int b = it->idx();
         ++it;
-        my_indices.push_back(it->idx());
+        int c = it->idx();
+
+        my_indices.push_back(a);
+        my_indices.push_back(b);
+        my_indices.push_back(c);
+
+        if (is_main_mesh) {
+            i2f[{a, b, c}] = f.idx();
+        }
     }
 
     glGenBuffers(1, &ebo);

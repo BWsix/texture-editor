@@ -4,11 +4,17 @@
 #include "screen.h"
 #include <GL/gl.h>
 #include <set>
+#include <unordered_set>
 #include <Eigen/Dense>
+
+using I2F = std::map<std::tuple<int, int, int>, int>;
 
 class TextureEditor {
     std::set<GLuint> added_face_ids;
     std::set<GLuint> selected_face_ids;
+
+    I2F indices_to_face_id;
+    std::unordered_multiset<GLuint> covered_face_ids;
 
     GLuint closest_edge_point_id;
 
@@ -30,6 +36,9 @@ public:
         bool highlight_hovered_face = true;
 
         bool render_live_uv_solver = true;
+
+        bool gold_mode = false;
+        bool ugly_mode = false;
     } configs;
 
     struct {
@@ -74,9 +83,11 @@ public:
     void renderSavedMeshes(Shader prog);
     void renderFacePicker();
     void renderSelected();
+    void highlightCoveredFaces();
 
     // UI
     void renderLiveUVSolver();
+    void renderMenu();
     void renderPopupMenu();
     void renderMeshLayerEditor();
 };
