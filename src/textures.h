@@ -18,7 +18,7 @@ public:
             if (fs::is_regular_file(entry.path())) {
                 std::cout << "path" << entry.path() << std::endl;
                 std::cout << "filename" << entry.path().filename() << std::endl;
-                store[entry.path().filename()] = Texture::Load(entry.path());
+                store[entry.path().filename().string()] = Texture::Load(entry.path().string());
             } else if (fs::is_directory(entry.path())) {
                 std::cout << entry.path() << "\n";
             }

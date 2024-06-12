@@ -6,7 +6,7 @@
 #include <string>
 
 class Shader {
-    uint ID; 
+    GLuint ID; 
 
 public:
     static Shader From(const char *vertexPath, const char *fragmentPath) {

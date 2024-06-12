@@ -24,9 +24,9 @@ class Screen {
     GLuint *ids;
 public:
     GLuint texture, texture_faceid, texture_depth;
-    uint width, height;
+    GLuint width, height;
 
-    Screen(uint width, uint height): width(width), height(height){}
+    Screen(GLuint width, GLuint height): width(width), height(height){}
 
     void render(Shader prog) {
         glDisable(GL_DEPTH_TEST);
