@@ -90,4 +90,5 @@ public:
     void renderMenu();
     void renderPopupMenu();
     void renderMeshLayerEditor();
+    void renderTextureMenu(int n, bool& hovered);
 };

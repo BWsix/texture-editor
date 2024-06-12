@@ -10,6 +10,9 @@ uniform mat4 projection;
 
 uniform float scale;
 
+uniform bool fv;
+uniform bool fh;
+
 out vec2 texCoords;
 out vec3 FragPos;
 out vec3 Normal;
@@ -19,5 +22,10 @@ void main() {
     gl_Position = mvp * vec4(aPosition, 1.0);
     FragPos = vec3(model * vec4(aPosition, 1.0));
     Normal = mat3(transpose(inverse(model))) * aNormal;
-    texCoords = ((aTexCoords * 2.0 - 1.0) * scale / 2.0) + 0.5;
+
+    vec2 tex = (aTexCoords * 2.0 - 1.0) * scale;
+    if (fv) tex.y *= -1.0;
+    if (fh) tex.x *= -1.0;
+    tex = tex / 2.0 + 0.5;
+    texCoords = tex;
 }

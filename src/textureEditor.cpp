@@ -111,11 +111,9 @@ void TextureEditor::fill() {
 
         OpenMesh::SmartHalfedgeHandle first_heh = _heh;
         int length = 1;
-        // std::cout << "new edge!\n  " << _heh.idx() << "\n";
         visited_boundaries.insert(_heh.idx());
         for (auto heh = first_heh.next(); heh != first_heh; heh = heh.next()) {
             length += 1;
-            // std::cout << "  " << heh.idx() << "\n";
             visited_boundaries.insert(heh.idx());
         }
 
@@ -126,7 +124,15 @@ void TextureEditor::fill() {
     boundary_length.pop_back();
 
     for (auto [_, first_heh] : boundary_length) {
-        addFace(selected_mesh.property(selected_mesh.face_idx, first_heh));
+        std::vector<GLuint> ids;
+        ids.push_back(selected_mesh.property(selected_mesh.face_idx, first_heh));
+        for (auto heh = first_heh.next(); heh != first_heh; heh = heh.next()) {
+            ids.push_back(selected_mesh.property(selected_mesh.face_idx, heh));
+        }
+
+        for (auto id : ids) {
+             addFace(id);
+        }
     }
 
     if (!boundary_length.empty()) {
@@ -170,7 +176,7 @@ std::set<size_t> TextureEditor::getFaceIdWithRadius(GLuint face_id) {
 
 void TextureEditor::addFace(GLuint face_id) {
     for (auto idx : getFaceIdWithRadius(face_id)) {
-        if (configs.radius > 1 && covered_face_ids.count(idx)) {
+        if (ImGui::IsKeyDown(ImGuiKey_Space) && configs.radius > 1 && covered_face_ids.count(idx)) {
             continue;
         }
         selected_face_ids.insert(idx);
@@ -406,7 +412,13 @@ void TextureEditor::renderLiveUVSolver() {
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_AlwaysAutoResize;
     ImGui::Begin("Live UV solver", NULL, flags);
     ImGui::Image((ImTextureID)child_screen.texture, {500, 500});
+
     ImGui::SliderFloat("Scale", &selected_mesh.scale, 0.1, 2.0);
+    ImGui::SameLine();
+    ImGui::Checkbox("Flip X", &selected_mesh.flip_horizontally);
+    ImGui::SameLine();
+    ImGui::Checkbox("Flip Y", &selected_mesh.flip_vertically);
+
     ImGui::End();
 }
 
@@ -569,6 +581,50 @@ void TextureEditor::renderSelected() {
     selected_mesh.renderUV(programs.uv);
 }
 
+void TextureEditor::renderTextureMenu(int n, bool& hovered) {
+    ImGui::InputText("Name", &saved_meshes[n].name[0], saved_meshes[n].name.capacity());
+    if (ImGui::IsItemHovered()) {
+        hovered = true;
+        highlighted_mesh_idx = n;
+    }
+
+    ImGui::SliderFloat("Scale", &saved_meshes[n].scale, 0.1, 2.0);
+
+    ImGui::Checkbox("Flip X", &saved_meshes[n].flip_horizontally);
+    ImGui::SameLine();
+    ImGui::Checkbox("Flip Y", &saved_meshes[n].flip_vertically);
+
+    if (ImGui::Button("Edit")) {
+        reset();
+
+        auto it = saved_meshes.begin() + n;
+        auto ids = it->getFaceIds(indices_to_face_id);
+
+        selected_face_ids.insert(ids.begin(), ids.end());
+        acuallyAddingFace();
+        solveUV();
+
+        saved_meshes.erase(it);
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Delete")) {
+        auto it = saved_meshes.begin() + n;
+        for (auto id : it->getFaceIds(indices_to_face_id)) {
+            covered_face_ids.erase(covered_face_ids.find(id));
+        }
+        saved_meshes.erase(it);
+    }
+
+    ImGui::SameLine();
+    if (ImGui::TreeNode("Change Texture")) {
+        if (textures.renderPicker(3)) {
+            saved_meshes[n].texture_id = textures.selected_texture;
+        }
+        ImGui::TreePop();
+    }
+}
+
 void TextureEditor::renderMeshLayerEditor() {
     ImGui::Begin("Mesh", NULL);
 
@@ -592,57 +648,7 @@ void TextureEditor::renderMeshLayerEditor() {
     bool hovered = false;
     for (int n = saved_meshes.size() - 1; n >= 0; n--) {
         ImGui::PushID(n);
-
-        auto item = std::to_string(n);
-
-        ImGui::InputText("Name", &saved_meshes[n].name[0], saved_meshes[n].name.capacity());
-        if (ImGui::IsItemHovered()) {
-            hovered = true;
-            highlighted_mesh_idx = n;
-        }
-
-        ImGui::SliderFloat("Scale", &saved_meshes[n].scale, 0.1, 2.0);
-
-        if (ImGui::Button("Edit")) {
-            reset();
-
-            auto it = saved_meshes.begin() + n;
-            auto ids = it->getFaceIds(indices_to_face_id);
-
-            selected_face_ids.insert(ids.begin(), ids.end());
-            acuallyAddingFace();
-            solveUV();
-
-            saved_meshes.erase(it);
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Delete")) {
-            auto it = saved_meshes.begin() + n;
-            for (auto id : it->getFaceIds(indices_to_face_id)) {
-                covered_face_ids.erase(covered_face_ids.find(id));
-            }
-            saved_meshes.erase(it);
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Move ^")) {
-            std::swap(saved_meshes[n], saved_meshes[n - 1]);
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Move v")) {
-            std::swap(saved_meshes[n], saved_meshes[n + 1]);
-        }
-
-        ImGui::SameLine();
-        if (ImGui::TreeNode("Change Texture")) {
-            if (textures.renderPicker(3)) {
-                saved_meshes[n].texture_id = textures.selected_texture;
-            }
-            ImGui::TreePop();
-        }
-
+        renderTextureMenu(n, hovered);
         ImGui::PopID();
     }
 

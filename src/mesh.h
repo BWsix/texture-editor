@@ -72,6 +72,8 @@ public:
     std::string texture_id;
 
     float scale = 1.0;
+    bool flip_horizontally = false;
+    bool flip_vertically = false;
 
     OpenMesh::FPropHandleT<bool> selected;
     OpenMesh::EPropHandleT<float> weight;
@@ -98,6 +100,10 @@ public:
             my_vertices.push_back(MyVertex::Load(v));
         }
         m.loadVertices(my_vertices, j["indices"], j["original_indices"]);
+
+        if (j["fv"].is_boolean()) m.flip_vertically = j["fv"];
+        if (j["fh"].is_boolean()) m.flip_horizontally = j["fh"];
+
         return m;
     }
 
@@ -114,6 +120,9 @@ public:
         j["texture_id"] = texture_id;
         j["name"] = name;
         j["scale"] = scale;
+
+        if (flip_horizontally) j["fh"] = true;
+        if (flip_vertically) j["fv"] = true;
 
         j["vertices"] = json::array();
         for (const auto& v : my_vertices) {
