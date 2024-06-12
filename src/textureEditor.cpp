@@ -268,17 +268,14 @@ void TextureEditor::solveUV() {
     Eigen::VectorXf by(interior_points.size());
     by.setZero();
 
-    std::map<int, MyMesh::VertexHandle> idx_to_vh;
     for (size_t i = 0; i < interior_points.size(); i++) {
         auto& vh = interior_points[i];
-        idx_to_vh[i] = vh;
         selected_mesh.property(selected_mesh.idx, vh) = i;
         A(i, i) = selected_mesh.property(selected_mesh.W, vh);
     }
     for (size_t i = 0; i < edge_points.size(); i++) {
         auto vh = edge_points[i];
         int idx = i + interior_points.size();
-        idx_to_vh[idx] = vh;
         selected_mesh.property(selected_mesh.idx, vh) = idx;
     }
 
