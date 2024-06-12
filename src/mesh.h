@@ -101,8 +101,8 @@ public:
         }
         m.loadVertices(my_vertices, j["indices"], j["original_indices"]);
 
-        if (j["fv"].is_boolean()) m.flip_vertically = j["fv"];
-        if (j["fh"].is_boolean()) m.flip_horizontally = j["fh"];
+        if (j.find("fv") != j.end()) m.flip_vertically = j["fv"];
+        if (j.find("fh") != j.end()) m.flip_horizontally = j["fh"];
 
         return m;
     }
